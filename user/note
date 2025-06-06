@@ -1,0 +1,135 @@
+<?php
+session_start();
+include "connection.php";
+
+// Fetch category ID from GET request
+$category_id = isset($_GET['categoryid']) ? intval($_GET['categoryid']) : 0;
+
+// Initialize query based on category_id
+if ($category_id == 1) {
+    // If category_id is 1, fetch books with respect to uitid
+    $query = "SELECT books.bookid, books.bookpic, books.bookname, uitid 
+              FROM `books` 
+              WHERE books.categoryid = $category_id";
+
+    // Fetch uitid for setting the title
+    $q = mysqli_query($db, $query);
+    $row = mysqli_fetch_assoc($q);
+    $uitid = $row['uitid'];
+
+    // Set the title based on uitid
+    switch ($uitid) {
+        case 1:
+            $title = "UIT First Year";
+            break;
+        case 2:
+            $title = "UIT Second Year";
+            break;
+        case 3:
+            $title = "UIT Third Year";
+            break;
+        // Add more cases as necessary
+        default:
+            $title = "UIT Year";
+            break;
+    }
+
+} else {
+    // If category_id is not 1, use the original query structure
+    $query = "SELECT books.bookid, books.bookpic, books.bookname 
+              FROM `books` 
+              WHERE books.categoryid = $category_id";
+
+    // Fetch the category name for the selected category
+    $cat = mysqli_query($db, "SELECT categoryname FROM category WHERE categoryid = $category_id;");
+    $category_name = mysqli_fetch_assoc($cat)['categoryname'];
+    $title = $category_name;
+}
+
+// Handle search term
+$search_term = isset($_POST['search']) ? mysqli_real_escape_string($db, $_POST['search']) : '';
+if ($search_term) {
+    $query .= " AND (bookname LIKE '%$search_term%')";
+}
+
+// Execute query
+$q = mysqli_query($db, $query);
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Existing head content -->
+    <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
+    <style>
+        /* Additional responsive styling */
+        .row {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        #card {
+            flex: 0 0 22%;
+            margin-bottom: 15px;
+        }
+        #card img {
+            width: 100%;
+        }
+        .row::-webkit-scrollbar {
+            height: 8px;
+        }
+        .row::-webkit-scrollbar-thumb {
+            background-color: #888;
+            border-radius: 10px;
+        }
+        .row::-webkit-scrollbar-thumb:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body class="fixed-left">
+    <div id="wrapper">
+        <!-- Existing topbar and sidebar content -->
+
+        <!-- Start right Content here -->
+        <div class="content-page">
+            <div class="content">
+                <div class="row">
+                    <div class="all-books">
+                        <div class="search-bar">
+                            <form action="" method='post'>
+                                <input type="search" name='search' placeholder='Search by Book Name'>
+                                <button type='submit' name='submit'><i class="fas fa-search"></i></button>
+                            </form>
+                        </div>
+                        <div class="small-container">
+                            <h2 class='all-books-title'><?php echo $title; ?></h2>
+                            <?php
+                                if (mysqli_num_rows($q) == 0) {
+                                    echo "Sorry! No Books found. Try searching again.";
+                                } else {
+                                    echo "<div class='row' style='overflow-x:auto;'>";
+                                    while ($row = mysqli_fetch_assoc($q)) {
+                                        echo "<div id='card'>
+                                        <a href='book_detail.php?id={$row['bookid']}'>
+                                                <img src='images/{$row['bookpic']}'>
+                                                <div id='card-body'>
+                                                    <h4 style='font-size: 16px;'>{$row['bookname']}</h4>
+                                                </div>
+                                        </a>
+                                          </div>";
+                                    }
+                                    echo "</div>";
+                                }
+                            ?>
+                            <button class="btn btn-primary"><a href="view_all_books.php?categoryid=<?php echo $category_id; ?>">View All</a></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing scripts -->
+</body>
+</html>
